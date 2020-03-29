@@ -1,6 +1,6 @@
 fun main (){
     val b = Othello()
-    //b.gameOnAlBe(1,4, false)
-    //b.gameOnMinimaxCustom(2,1,false)
+    b.gameOnAlBe(3,2, false)
+    //b.gameOnMinimaxCustom(1,2,false)
     //b.gameOnChooseTheBest()
 }
