@@ -1,9 +1,11 @@
 //https://guides.net4tv.com/games/how-win-reversi reference for better scoring heuristic
+//"Deep Learning and the Game of Go" by Max Pumperla and Kevin Ferguson. I used this for creating future bot that uses deep learning technique.
 import kotlin.collections.ArrayList
 import kotlin.random.Random
 import javax.swing.*
 import java.awt.*
 import java.lang.Exception
+import java.util.*
 import kotlin.math.max
 import kotlin.math.min
 
@@ -18,6 +20,7 @@ class Othello{
     private lateinit var OthelloComp: Component
     private var xSkips = false
     private var oSkips = false
+
     //Initialize the board begin position
     init {
         state[44] = 1
@@ -27,7 +30,7 @@ class Othello{
     }
 
     //better heuristic function: sides of board and conners weight more points than placing and capture turing pieces on the board.
-    //penalty: is higher than the reward. The expectation: the both AI players will try to play the game somewhat in the center.
+    //penalty is higher than the reward. The expectation: the both AI players will try to play the game somewhat in the center.
 /*
     private fun evaluate(id:Byte):Int{
         val conners = arrayOf(0,9,90,99)
@@ -52,7 +55,7 @@ class Othello{
 */
     // Corners and two other prior tiles will be weight more does not care about how many capture at current
     // However, if placing the pieces near the corners will be heavily penalty; if opponents place in death tile get extra points
-    // This function accept a byte (either 1, -1) which indicates who is scoring the move atm. Return Integer variable as scoring
+    // This function accept a byte (either 1, -1) which indicates who is scoring the move at the moment. Return Integer variable as scoring
     private fun evaluate(id:Byte):Int{
         val conners = arrayOf(0,9,90,99)
         val secondPrior = arrayOf(2,7,92,97,29,20,70,79)
@@ -286,7 +289,7 @@ class Othello{
     //MINIMAX DEPTH OF 2
     //I code minimax by the tree height one by one. Meaning first recursion only go max layer, second recursion min layer and so on.
     //Depth of 1 minimax will be (max layer and min layer) 2 depth will be (max, min, max, and min layers)
-    //This minimax using a better heuristic versiono
+    //This minimax using a better heuristic version
     //If random is false two player using MINIMAX DEPTH custom depth play against each other
     //If random is True white player will play random, and the black use MINIMAX custom depth
     //(custom depth meaning user indicate the depth) At the Moment( it can be run on 2 depth; 3depth, and above need faster CPU and higher RAM)
@@ -366,7 +369,56 @@ class Othello{
         declare()
     }
 
-    fun ABPrunningHelper(layer: Int,turn:Int){
+    fun gameOnAlBeHuman(black:Int,random:Boolean){
+        var turn=1
+        CreateAGUIBoard()
+        while(true){
+            if(end(turn.toByte())||(xSkips&&oSkips))
+                break
+            if(turn==1) {
+                if(!random) {
+                    println("ALL YOUR LEGAL MOVES: ${validmoves(turn.toByte()).size}")
+                    println(validmoves(turn.toByte()))
+                    if(validmoves(turn.toByte()).size==0) {
+                        println("OUT OF MOVES. PASS")
+                        xSkips = true
+                    }
+                    else{
+                    val move: Int = readLine()!!.toInt()
+                    place(validmoves(turn.toByte())[move].first,validmoves(turn.toByte())[move].second, turn.toByte())
+                    }
+                }
+                else{
+                    val moveListConsider = validmoves(turn.toByte())
+                    if(moveListConsider.size>0) {
+                        xSkips = false
+                        /*
+                        val scoringAll = ArrayList<Pair<Int, Int>>()
+                        for(move in 0 until moveListConsider.size) {
+                            var temp = state.copyOf()
+                            place(moveListConsider[move].first, moveListConsider[move].second, turn.toByte())
+                            scoringAll.add(Pair(evaluate(turn.toByte()), move))
+                            state = temp.copyOf()
+                        }
+                        val keepPair = scoringAll.maxBy { it.first }?.second!!
+                        */
+                        val keepPair = Random.nextInt(0, moveListConsider.size)
+                        place(moveListConsider[keepPair].first, moveListConsider[keepPair].second,turn.toByte())
+                    }else
+                        oSkips = true
+                }
+            }else
+                ABPrunningHelper(black*2,turn)
+            OthelloComp.repaint()
+            turn =-turn
+            try{
+                Thread.sleep(SPEED.toLong())
+            } catch (e: Exception){ }
+        }
+        declare()
+    }
+
+    private fun ABPrunningHelper(layer: Int, turn:Int){
         val playerValidMoves = validmoves(turn.toByte())
         var keepMove: Pair<Int, Int> = Pair(-90,-90)
         var scoring = negINF-1
@@ -395,7 +447,7 @@ class Othello{
         place(keepMove.first,keepMove.second,turn.toByte())
     }
 
-    fun AlPhaBeta(layer: Int,theActualPlayerConsider:Byte,opponent:Byte,alpha:Int, beta:Int,IsMini:Boolean):Int{
+    private fun AlPhaBeta(layer: Int, theActualPlayerConsider:Byte, opponent:Byte, alpha:Int, beta:Int, IsMini:Boolean):Int{
         if(layer==0) {
             return evaluate(theActualPlayerConsider)
         }
@@ -434,7 +486,7 @@ class Othello{
         }
     }
 
-    fun miniMaxHelper(layer: Int,turn:Int){
+    private fun miniMaxHelper(layer: Int, turn:Int){
     val playerValidMoves = validmoves(turn.toByte())
     var keepMove: Pair<Int, Int> = Pair(-90,-90)
     var scoring = negINF-1
@@ -463,7 +515,7 @@ class Othello{
     place(keepMove.first,keepMove.second,turn.toByte())
     }
 
-    fun minimax(layer: Int,theActualPlayerConsider:Byte,opponent:Byte,IsMini:Boolean):Int{
+    private fun minimax(layer: Int, theActualPlayerConsider:Byte, opponent:Byte, IsMini:Boolean):Int{
         if(layer==0) {
             return evaluate(theActualPlayerConsider)
         }
